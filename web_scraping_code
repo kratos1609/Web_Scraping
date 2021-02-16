@@ -1,0 +1,38 @@
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+url="https://www.oyorooms.com/hotels-in-bangalore/?page="
+pg_max=3
+
+for pg in range(1,pg_max):
+    req=requests.get(url)
+    content=req.content
+    print(content)
+
+    soup=BeautifulSoup(content,"html.parser")
+
+    all_hotels=soup.find_all("div",{"class": "hotelCardListing"})
+    scr=[]
+
+    for h in all_hotels:
+        dict={}
+        dict["name"]=h.find("h3",{"class","listingHotelDescription__hotelName"}).text
+        dict["add"]=h.find("span",{"itemprop": "streetAddress"}).text
+        dict["price"]=h.find("span",{"class": "listingPrice__finalPrice"}).text     
+        try:
+            dict["rating"]=h.find("span",{"class": "hotelRatong__ratingSummary"}).text
+        except AttributError:
+            pass
+     
+        parent_amenities_element=h.find("div",{"class": "amenityWrapper"})
+     
+        a_list=[]
+        for a in parent_amenities_element.find_all("div",{"class": "amenityWrapper__amenity"}):
+            a_list.append(ame.find("span",{"class": "d-body-smd-textEllipsis"}).text.strip())
+            
+        dict["amenities"]=', '.join(a_list[:-1])
+    
+        scr.append(dict)
+
+df=pd.DataFrame(scr)
+df.to_csv("Oyo.csv")
